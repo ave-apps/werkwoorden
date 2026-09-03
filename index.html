@@ -52,9 +52,11 @@
 
   /* ---------- Mode cards ---------- */
   .modes{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modes2{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
   .modes3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
   @media (max-width: 620px){ .modes3{ grid-template-columns: 1fr; } }
-  @media (max-width: 480px){ .modes{ grid-template-columns: 1fr; } }
+  @media (max-width: 480px){ .modes{ grid-template-columns: 1fr; } .modes2{ grid-template-columns: 1fr; } }
+  .mode-card-wide{ display:block; }
   .mode-card{
     background: var(--card); border: 3px solid transparent; border-radius: 16px;
     padding: 16px; text-align:left; box-shadow: 0 3px 10px rgba(34,48,71,.08);
@@ -69,6 +71,8 @@
   }
   .tense-badge.present{ background:#F1FBF7; color: var(--mint-dark); }
   .tense-badge.past{ background:#FFF3F1; color: var(--coral-dark); }
+  .tense-badge.vtt{ background:#EAF1FC; color:#3D6FB4; }
+  .tense-badge.vvt{ background:#F3EAFB; color:#8A4FC7; }
   .tense-badge.question{ background:#FFF6DD; color: var(--gold-dark); }
 
   .qmode-toggle{
@@ -187,7 +191,7 @@
 
     <fieldset>
       <legend>Welke tijd wil je oefenen?</legend>
-      <div class="modes3">
+      <div class="modes2">
         <div class="mode-card selected" data-tense="present" tabindex="0" role="button">
           <h3>🕐 Tegenwoordige tijd</h3>
           <p>ik loop, jij loopt, hij loopt...</p>
@@ -204,10 +208,26 @@
             <span>+ vragende vorm (liep jij?)</span>
           </label>
         </div>
-        <div class="mode-card" data-tense="mixed" tabindex="0" role="button">
-          <h3>🔀 Door elkaar</h3>
-          <p>bijv. ik word, jij werd, hij wordt, wij werden... (alle vormen mogelijk)</p>
+        <div class="mode-card" data-tense="vtt" tabindex="0" role="button">
+          <h3>✅ Voltooide tegenwoordige tijd</h3>
+          <p>ik heb gelopen, jij hebt gelopen...</p>
+          <label class="qmode-toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="questionVttCheck">
+            <span>+ vragende vorm (heb jij gelopen?)</span>
+          </label>
         </div>
+        <div class="mode-card" data-tense="vvt" tabindex="0" role="button">
+          <h3>📜 Voltooide verleden tijd</h3>
+          <p>ik had gelopen, jij had gelopen...</p>
+          <label class="qmode-toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="questionVvtCheck">
+            <span>+ vragende vorm (blijft gelijk)</span>
+          </label>
+        </div>
+      </div>
+      <div class="mode-card mode-card-wide" data-tense="mixed" tabindex="0" role="button">
+        <h3>🔀 Door elkaar</h3>
+        <p>Alle vier de tijden door elkaar, bijv. ik word, jij werd, hij is geworden, wij waren geworden...</p>
       </div>
     </fieldset>
 
@@ -227,6 +247,7 @@
 
     <button type="button" class="explain-link" id="explainLinkBtn">📖 Uitleg: het -dt-trucje met 'lopen'</button>
     <button type="button" class="explain-link" id="kofschipLinkBtn" style="margin-top:10px;">📖 Uitleg: 't Kofschip</button>
+    <button type="button" class="explain-link" id="hulpLinkBtn" style="margin-top:10px;">📖 Uitleg: hebben of zijn?</button>
 
     <button type="button" class="cta" id="startBtn">Beginnen</button>
 
@@ -292,31 +313,45 @@
 
   const PRONOUNS = ['ik', 'jij', 'hij / zij / het', 'wij', 'jullie', 'zij'];
 
-  // Every verb: infinitief + the six tegenwoordige-tijd forms and the six verleden-tijd forms,
-  // in the order above. "dt": true marks the verbs that specifically drill the -t / -dt / no-extra-t
-  // spelling rule in the tegenwoordige tijd.
+  // Every verb: infinitief + de zes vormen voor tegenwoordige tijd (formsPresent) en verleden tijd
+  // (formsPast), plus "hulp" (hebben/zijn) en "deelwoord" (voltooid deelwoord) waaruit de voltooide
+  // tijden hieronder automatisch worden opgebouwd. "dt": true markeert de werkwoorden die de -t / -dt
+  // spellingsregel in de tegenwoordige tijd op de proef stellen.
   const VERBS = [
-    { infinitief: 'lopen',      formsPresent: ['loop','loopt','loopt','lopen','lopen','lopen'],           formsPast: ['liep','liep','liep','liepen','liepen','liepen'],                         dt:false },
-    { infinitief: 'spelen',     formsPresent: ['speel','speelt','speelt','spelen','spelen','spelen'],     formsPast: ['speelde','speelde','speelde','speelden','speelden','speelden'],           dt:false },
-    { infinitief: 'maken',      formsPresent: ['maak','maakt','maakt','maken','maken','maken'],           formsPast: ['maakte','maakte','maakte','maakten','maakten','maakten'],                 dt:false },
-    { infinitief: 'wonen',      formsPresent: ['woon','woont','woont','wonen','wonen','wonen'],           formsPast: ['woonde','woonde','woonde','woonden','woonden','woonden'],                 dt:false },
-    { infinitief: 'werken',     formsPresent: ['werk','werkt','werkt','werken','werken','werken'],        formsPast: ['werkte','werkte','werkte','werkten','werkten','werkten'],                 dt:false },
-    { infinitief: 'leren',      formsPresent: ['leer','leert','leert','leren','leren','leren'],           formsPast: ['leerde','leerde','leerde','leerden','leerden','leerden'],                 dt:false },
-    { infinitief: 'horen',      formsPresent: ['hoor','hoort','hoort','horen','horen','horen'],           formsPast: ['hoorde','hoorde','hoorde','hoorden','hoorden','hoorden'],                 dt:false },
-    { infinitief: 'kijken',     formsPresent: ['kijk','kijkt','kijkt','kijken','kijken','kijken'],        formsPast: ['keek','keek','keek','keken','keken','keken'],                             dt:false },
-    { infinitief: 'lezen',      formsPresent: ['lees','leest','leest','lezen','lezen','lezen'],           formsPast: ['las','las','las','lazen','lazen','lazen'],                                dt:false },
-    { infinitief: 'roepen',     formsPresent: ['roep','roept','roept','roepen','roepen','roepen'],        formsPast: ['riep','riep','riep','riepen','riepen','riepen'],                          dt:false },
-    { infinitief: 'praten',     formsPresent: ['praat','praat','praat','praten','praten','praten'],       formsPast: ['praatte','praatte','praatte','praatten','praatten','praatten'],           dt:true },
-    { infinitief: 'zitten',     formsPresent: ['zit','zit','zit','zitten','zitten','zitten'],              formsPast: ['zat','zat','zat','zaten','zaten','zaten'],                                dt:true },
-    { infinitief: 'wachten',    formsPresent: ['wacht','wacht','wacht','wachten','wachten','wachten'],     formsPast: ['wachtte','wachtte','wachtte','wachtten','wachtten','wachtten'],           dt:true },
-    { infinitief: 'weten',      formsPresent: ['weet','weet','weet','weten','weten','weten'],              formsPast: ['wist','wist','wist','wisten','wisten','wisten'],                          dt:true },
-    { infinitief: 'worden',     formsPresent: ['word','wordt','wordt','worden','worden','worden'],         formsPast: ['werd','werd','werd','werden','werden','werden'],                          dt:true },
-    { infinitief: 'houden',     formsPresent: ['houd','houdt','houdt','houden','houden','houden'],         formsPast: ['hield','hield','hield','hielden','hielden','hielden'],                    dt:true },
-    { infinitief: 'antwoorden', formsPresent: ['antwoord','antwoordt','antwoordt','antwoorden','antwoorden','antwoorden'], formsPast: ['antwoordde','antwoordde','antwoordde','antwoordden','antwoordden','antwoordden'], dt:true },
-    { infinitief: 'landen',     formsPresent: ['land','landt','landt','landen','landen','landen'],         formsPast: ['landde','landde','landde','landden','landden','landden'],                 dt:true },
-    { infinitief: 'melden',     formsPresent: ['meld','meldt','meldt','melden','melden','melden'],         formsPast: ['meldde','meldde','meldde','meldden','meldden','meldden'],                 dt:true },
-    { infinitief: 'rijden',     formsPresent: ['rijd','rijdt','rijdt','rijden','rijden','rijden'],         formsPast: ['reed','reed','reed','reden','reden','reden'],                             dt:true }
+    { infinitief: 'lopen',      formsPresent: ['loop','loopt','loopt','lopen','lopen','lopen'],           formsPast: ['liep','liep','liep','liepen','liepen','liepen'],                         dt:false, hulp:'hebben', deelwoord:'gelopen' },
+    { infinitief: 'spelen',     formsPresent: ['speel','speelt','speelt','spelen','spelen','spelen'],     formsPast: ['speelde','speelde','speelde','speelden','speelden','speelden'],           dt:false, hulp:'hebben', deelwoord:'gespeeld' },
+    { infinitief: 'maken',      formsPresent: ['maak','maakt','maakt','maken','maken','maken'],           formsPast: ['maakte','maakte','maakte','maakten','maakten','maakten'],                 dt:false, hulp:'hebben', deelwoord:'gemaakt' },
+    { infinitief: 'wonen',      formsPresent: ['woon','woont','woont','wonen','wonen','wonen'],           formsPast: ['woonde','woonde','woonde','woonden','woonden','woonden'],                 dt:false, hulp:'hebben', deelwoord:'gewoond' },
+    { infinitief: 'werken',     formsPresent: ['werk','werkt','werkt','werken','werken','werken'],        formsPast: ['werkte','werkte','werkte','werkten','werkten','werkten'],                 dt:false, hulp:'hebben', deelwoord:'gewerkt' },
+    { infinitief: 'leren',      formsPresent: ['leer','leert','leert','leren','leren','leren'],           formsPast: ['leerde','leerde','leerde','leerden','leerden','leerden'],                 dt:false, hulp:'hebben', deelwoord:'geleerd' },
+    { infinitief: 'horen',      formsPresent: ['hoor','hoort','hoort','horen','horen','horen'],           formsPast: ['hoorde','hoorde','hoorde','hoorden','hoorden','hoorden'],                 dt:false, hulp:'hebben', deelwoord:'gehoord' },
+    { infinitief: 'kijken',     formsPresent: ['kijk','kijkt','kijkt','kijken','kijken','kijken'],        formsPast: ['keek','keek','keek','keken','keken','keken'],                             dt:false, hulp:'hebben', deelwoord:'gekeken' },
+    { infinitief: 'lezen',      formsPresent: ['lees','leest','leest','lezen','lezen','lezen'],           formsPast: ['las','las','las','lazen','lazen','lazen'],                                dt:false, hulp:'hebben', deelwoord:'gelezen' },
+    { infinitief: 'roepen',     formsPresent: ['roep','roept','roept','roepen','roepen','roepen'],        formsPast: ['riep','riep','riep','riepen','riepen','riepen'],                          dt:false, hulp:'hebben', deelwoord:'geroepen' },
+    { infinitief: 'praten',     formsPresent: ['praat','praat','praat','praten','praten','praten'],       formsPast: ['praatte','praatte','praatte','praatten','praatten','praatten'],           dt:true,  hulp:'hebben', deelwoord:'gepraat' },
+    { infinitief: 'zitten',     formsPresent: ['zit','zit','zit','zitten','zitten','zitten'],              formsPast: ['zat','zat','zat','zaten','zaten','zaten'],                                dt:true,  hulp:'hebben', deelwoord:'gezeten' },
+    { infinitief: 'wachten',    formsPresent: ['wacht','wacht','wacht','wachten','wachten','wachten'],     formsPast: ['wachtte','wachtte','wachtte','wachtten','wachtten','wachtten'],           dt:true,  hulp:'hebben', deelwoord:'gewacht' },
+    { infinitief: 'weten',      formsPresent: ['weet','weet','weet','weten','weten','weten'],              formsPast: ['wist','wist','wist','wisten','wisten','wisten'],                          dt:true,  hulp:'hebben', deelwoord:'geweten' },
+    { infinitief: 'worden',     formsPresent: ['word','wordt','wordt','worden','worden','worden'],         formsPast: ['werd','werd','werd','werden','werden','werden'],                          dt:true,  hulp:'zijn',    deelwoord:'geworden' },
+    { infinitief: 'houden',     formsPresent: ['houd','houdt','houdt','houden','houden','houden'],         formsPast: ['hield','hield','hield','hielden','hielden','hielden'],                    dt:true,  hulp:'hebben', deelwoord:'gehouden' },
+    { infinitief: 'antwoorden', formsPresent: ['antwoord','antwoordt','antwoordt','antwoorden','antwoorden','antwoorden'], formsPast: ['antwoordde','antwoordde','antwoordde','antwoordden','antwoordden','antwoordden'], dt:true, hulp:'hebben', deelwoord:'geantwoord' },
+    { infinitief: 'landen',     formsPresent: ['land','landt','landt','landen','landen','landen'],         formsPast: ['landde','landde','landde','landden','landden','landden'],                 dt:true,  hulp:'zijn',    deelwoord:'geland' },
+    { infinitief: 'melden',     formsPresent: ['meld','meldt','meldt','melden','melden','melden'],         formsPast: ['meldde','meldde','meldde','meldden','meldden','meldden'],                 dt:true,  hulp:'hebben', deelwoord:'gemeld' },
+    { infinitief: 'rijden',     formsPresent: ['rijd','rijdt','rijdt','rijden','rijden','rijden'],         formsPast: ['reed','reed','reed','reden','reden','reden'],                             dt:true,  hulp:'hebben', deelwoord:'gereden' }
   ];
+
+  // Voltooide tijden = hulpwerkwoord (hebben/zijn) + voltooid deelwoord. VTT gebruikt het hulpwerkwoord
+  // in de tegenwoordige tijd, VVT in de verleden tijd (dezelfde volgorde: ik/jij/hij/wij/jullie/zij).
+  const HEBBEN_PRESENT = ['heb','hebt','heeft','hebben','hebben','hebben'];
+  const HEBBEN_PAST    = ['had','had','had','hadden','hadden','hadden'];
+  const ZIJN_PRESENT   = ['ben','bent','is','zijn','zijn','zijn'];
+  const ZIJN_PAST      = ['was','was','was','waren','waren','waren'];
+  VERBS.forEach(v => {
+    const auxPresent = v.hulp === 'zijn' ? ZIJN_PRESENT : HEBBEN_PRESENT;
+    const auxPast = v.hulp === 'zijn' ? ZIJN_PAST : HEBBEN_PAST;
+    v.formsVTT = auxPresent.map(a => a + ' ' + v.deelwoord);
+    v.formsVVT = auxPast.map(a => a + ' ' + v.deelwoord);
+  });
 
   /* ---------------- Speech ---------------- */
   let nlVoice = null;
@@ -352,6 +387,8 @@
   let tenseMode = 'present'; // 'present' | 'past' | 'mixed'
   let questionModePresent = false;
   let questionModePast = false;
+  let questionModeVtt = false;
+  let questionModeVvt = false;
   let queue = [];
   let queueIndex = 0;
   let currentVerb = null;
@@ -399,6 +436,12 @@
   document.getElementById('questionPastCheck').addEventListener('change', (e) => {
     questionModePast = e.target.checked;
   });
+  document.getElementById('questionVttCheck').addEventListener('change', (e) => {
+    questionModeVtt = e.target.checked;
+  });
+  document.getElementById('questionVvtCheck').addEventListener('change', (e) => {
+    questionModeVvt = e.target.checked;
+  });
 
   document.getElementById('startBtn').addEventListener('click', startSession);
 
@@ -433,48 +476,72 @@
   const feedback = document.getElementById('feedback');
   const progressLine = document.getElementById('progressLine');
 
+  const TENSE_LABELS = {
+    present: 'tegenwoordige tijd',
+    past: 'verleden tijd',
+    vtt: 'voltooide tegenwoordige tijd',
+    vvt: 'voltooide verleden tijd'
+  };
+  const TENSE_BADGE_TEXT = { present: 'nu', past: 'toen', vtt: 'nu ✓', vvt: 'toen ✓' };
+  // Vragende vorm verandert alleen iets bij de jij-vorm van tijden die op de hulp-/hoofdwerkwoord
+  // "hebben/zijn"-achtige tegenwoordige-tijdsvorm leunen (present en vtt); bij past/vvt blijft alles gelijk.
+  const QUESTION_AFFECTS = { present: true, past: false, vtt: true, vvt: false };
+
   function buildMixedRowTenses(){
-    // guarantee at least one of each so it's genuinely mixed
+    const options = ['present', 'past', 'vtt', 'vvt'];
+    // guarantee at least two distinct tenses so it's genuinely mixed
     let rowTenses;
     for (let attempt = 0; attempt < 20; attempt++){
-      rowTenses = PRONOUNS.map(() => (Math.random() < 0.5 ? 'present' : 'past'));
-      if (rowTenses.includes('present') && rowTenses.includes('past')) break;
+      rowTenses = PRONOUNS.map(() => options[Math.floor(Math.random() * options.length)]);
+      if (new Set(rowTenses).size >= 2) break;
     }
     return rowTenses;
+  }
+
+  function questionModeFor(tense){
+    if (tense === 'present') return questionModePresent;
+    if (tense === 'past') return questionModePast;
+    if (tense === 'vtt') return questionModeVtt;
+    return questionModeVvt;
+  }
+
+  function formsFor(verb, tense){
+    if (tense === 'past') return verb.formsPast;
+    if (tense === 'vtt') return verb.formsVTT;
+    if (tense === 'vvt') return verb.formsVVT;
+    return verb.formsPresent;
   }
 
   function nextVerb(){
     if (queueIndex >= queue.length){ queue = buildQueue(); queueIndex = 0; }
     currentVerb = queue[queueIndex];
 
-    if (tenseMode === 'present'){
-      currentRowTense = ['present','present','present','present','present','present'];
-      currentQuestionRow = Array(6).fill(questionModePresent);
-    } else if (tenseMode === 'past'){
-      currentRowTense = ['past','past','past','past','past','past'];
-      currentQuestionRow = Array(6).fill(questionModePast);
-    } else {
+    if (tenseMode === 'mixed'){
       currentRowTense = buildMixedRowTenses();
       currentQuestionRow = PRONOUNS.map(() => Math.random() < 0.5);
+    } else {
+      currentRowTense = Array(6).fill(tenseMode);
+      currentQuestionRow = Array(6).fill(questionModeFor(tenseMode));
     }
 
-    // De jij-vorm in een vragende zin (bijv. "Word jij...?") verliest de -t en wordt gelijk aan de ik-vorm.
-    // In de verleden tijd verandert de vorm niet, alleen de woordvolgorde in de zin.
+    // De jij-vorm in een vragende zin (bijv. "Word jij...?", "Heb jij...?") verliest de -t en wordt
+    // gelijk aan de ik-vorm. Bij de verleden tijd en de voltooide verleden tijd verandert er niets.
     currentExpected = currentRowTense.map((t, i) => {
-      if (t === 'past') return currentVerb.formsPast[i];
-      if (i === 1 && currentQuestionRow[i]) return currentVerb.formsPresent[0];
-      return currentVerb.formsPresent[i];
+      const forms = formsFor(currentVerb, t);
+      if (i === 1 && currentQuestionRow[i] && QUESTION_AFFECTS[t]) return formsFor(currentVerb, t)[0];
+      return forms[i];
     });
 
     lockedCount = 0;
     feedback.textContent = '';
     feedback.className = 'feedback';
     verbInfinitive.textContent = currentVerb.infinitief;
-    verbHeading.textContent = tenseMode === 'present'
-      ? ('tegenwoordige tijd' + (questionModePresent ? ' — vragende vorm' : ''))
-      : tenseMode === 'past'
-        ? ('verleden tijd' + (questionModePast ? ' — vragende vorm' : ''))
-        : 'door elkaar — let op nu / toen';
+    if (tenseMode === 'mixed'){
+      verbHeading.textContent = 'door elkaar — let op de tijd per zin';
+    } else {
+      const note = questionModeFor(tenseMode) ? ' — vragende vorm' : '';
+      verbHeading.textContent = TENSE_LABELS[tenseMode] + note;
+    }
     renderForm();
     updateProgressLine();
   }
@@ -486,9 +553,9 @@
       row.className = 'verb-row';
       let badges = '';
       if (tenseMode === 'mixed'){
-        badges += '<span class="tense-badge ' + currentRowTense[i] + '">' + (currentRowTense[i] === 'past' ? 'toen' : 'nu') + '</span>';
+        badges += '<span class="tense-badge ' + currentRowTense[i] + '">' + TENSE_BADGE_TEXT[currentRowTense[i]] + '</span>';
       }
-      if (i === 1 && currentRowTense[i] === 'present' && currentQuestionRow[i]){
+      if (i === 1 && currentQuestionRow[i] && QUESTION_AFFECTS[currentRowTense[i]]){
         badges += '<span class="tense-badge question">vragend</span>';
       }
       const inputHTML = '<input type="text" id="vinput' + i + '" data-index="' + i + '" autocomplete="off" autocapitalize="off" spellcheck="false">';
@@ -531,8 +598,8 @@
       const check = document.getElementById('vcheck' + i);
       if (input.disabled){ continue; } // already locked correct
       anyNewlyChecked = true;
-      const given = input.value.trim().toLowerCase();
-      const expected = currentExpected[i].toLowerCase();
+      const given = input.value.trim().toLowerCase().replace(/\s+/g, ' ');
+      const expected = currentExpected[i].toLowerCase().replace(/\s+/g, ' ');
       if (given !== ''){
         if (given === expected){
           input.classList.remove('wrong');
@@ -733,6 +800,56 @@
     }
   ];
 
+  const HULP_STEPS = [
+    {
+      title: 'Het probleem',
+      text: 'Zeg je \u2018ik heb gelopen\u2019 of \u2018ik ben gelopen\u2019? \u2018Hij heeft geworden\u2019 of \u2018hij is geworden\u2019? Bij de voltooide tijden moet je kiezen tussen de hulpwerkwoorden \u2018hebben\u2019 en \u2018zijn\u2019.',
+      extra: ''
+    },
+    {
+      title: 'De hoofdregel: meestal hebben',
+      text: 'De meeste werkwoorden gebruiken \u2018hebben\u2019. Denk aan: maken, spelen, werken, leren, horen, kijken, lezen, praten, zitten, wachten, weten, houden, melden, antwoorden.',
+      extra: simplePairHTML([
+        {verb:'maken', past:'ik heb gemaakt'},
+        {verb:'spelen', past:'ik heb gespeeld'},
+        {verb:'zitten', past:'ik heb gezeten'}
+      ])
+    },
+    {
+      title: '\u2018Zijn\u2019 bij verandering',
+      text: '\u2018Zijn\u2019 gebruik je bij werkwoorden die een dúidelijke verandering aangeven \u2014 van plaats (je gaat ergens naartoe) of van toestand (je wordt iets anders) \u2014 met een duidelijk begin- en eindpunt.',
+      extra: ''
+    },
+    {
+      title: 'Voorbeeld: verandering van toestand',
+      text: '\u2018Worden\u2019 betekent dat iets verandert (van het ene in het andere). Daarom hoort daar \u2018zijn\u2019 bij: \u2018Hij is ziek geworden.\u2019 Niet \u2018hij heeft ziek geworden\u2019.',
+      extra: simplePairHTML([{verb:'worden', past:'hij is geworden', hl:true}])
+    },
+    {
+      title: 'Voorbeeld: verandering van plaats',
+      text: '\u2018Landen\u2019 betekent dat je van de lucht naar de grond gaat \u2014 een duidelijke verplaatsing met een eindpunt. Daarom: \u2018Het vliegtuig is geland.\u2019',
+      extra: simplePairHTML([{verb:'landen', past:'het vliegtuig is geland', hl:true}])
+    },
+    {
+      title: 'Het trucje',
+      text: 'Twijfel je? Vraag jezelf af: gebeurt hier iets waarbij ik (of iets) verandert van plaats of toestand, mét een duidelijk eindpunt? Ja \u2192 zijn. Is het gewoon een bezigheid, zonder dat nadruk op de verandering ligt? Nee \u2192 hebben.',
+      extra: ''
+    },
+    {
+      title: 'Let op: sommige werkwoorden kunnen allebei',
+      text: 'Werkwoorden als \u2018lopen\u2019 en \u2018rijden\u2019 kunnen soms \u2018hebben\u2019 én soms \u2018zijn\u2019 krijgen \u2014 het hangt af van de zin! \u2018Ik heb hard gelopen\u2019 (de bezigheid, geen bestemming) tegenover \u2018Ik ben naar school gelopen\u2019 (een verplaatsing, met een bestemming).',
+      extra: simplePairHTML([
+        {verb:'lopen (bezigheid)', past:'ik heb gelopen'},
+        {verb:'lopen (naar een plek)', past:'ik ben ... gelopen', hl:true}
+      ])
+    },
+    {
+      title: 'Aan de slag!',
+      text: 'Gebruik dit trucje als je twijfelt tussen hebben en zijn. Ga nu oefenen met de voltooide tijden \u2014 sluit deze uitleg en klik op \u2018Beginnen\u2019.',
+      extra: ''
+    }
+  ];
+
   let currentSteps = DT_STEPS;
   let explainIndex = 0;
   const explainScreenTitle = document.getElementById('explainScreenTitle');
@@ -781,6 +898,9 @@
   });
   document.getElementById('kofschipLinkBtn').addEventListener('click', () => {
     openExplanation(KOFSCHIP_STEPS, "'t Kofschip");
+  });
+  document.getElementById('hulpLinkBtn').addEventListener('click', () => {
+    openExplanation(HULP_STEPS, 'Hebben of zijn?');
   });
 
 })();
