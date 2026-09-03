@@ -385,6 +385,54 @@
     speechSynthesis.speak(utter);
   }
 
+  function splitIntoSentences(text){
+    // Splits on sentence-ending punctuation followed by whitespace, keeping the punctuation
+    // attached to its sentence. Avoids lookbehind for wider browser/tablet support.
+    const parts = text.split(/([.!?])\s+/);
+    const sentences = [];
+    for (let i = 0; i < parts.length; i += 2){
+      const sentence = parts[i] + (parts[i + 1] || '');
+      if (sentence.trim()) sentences.push(sentence.trim());
+    }
+    return sentences.length ? sentences : [text];
+  }
+
+  // Voor de langere uitleg-teksten: elke zin apart uitspreken met een korte pauze ertussen en een
+  // iets lager tempo. Dat geeft de spraaksynthese telkens een korte, schone zin om een natuurlijke
+  // intonatie op te leggen, in plaats van één lange doorlopende brok waar de klemtoon in verdwijnt.
+  function speakExplanation(text, onEnd){
+    if (muted || !window.speechSynthesis){
+      if (onEnd) setTimeout(onEnd, 1200);
+      return;
+    }
+    speechSynthesis.cancel();
+    const sentences = splitIntoSentences(text);
+    let idx = 0;
+    let cancelled = false;
+    function speakNext(){
+      if (cancelled) return;
+      if (idx >= sentences.length){ if (onEnd) onEnd(); return; }
+      const utter = new SpeechSynthesisUtterance(sentences[idx]);
+      utter.lang = 'nl-NL';
+      if (nlVoice) utter.voice = nlVoice;
+      utter.rate = 0.82;
+      utter.pitch = 1.0;
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        idx++;
+        setTimeout(speakNext, 220); // korte adempauze tussen zinnen
+      };
+      utter.onend = finish;
+      utter.onerror = finish;
+      setTimeout(finish, 8000);
+      speechSynthesis.speak(utter);
+    }
+    speakNext();
+    return () => { cancelled = true; };
+  }
+
   /* ---------------- State ---------------- */
   let pool = 'all';
   let tenseMode = 'present'; // 'present' | 'past' | 'mixed'
@@ -865,6 +913,7 @@
 
   let currentSteps = DT_STEPS;
   let explainIndex = 0;
+  let stopExplanationSpeech = null;
   const explainScreenTitle = document.getElementById('explainScreenTitle');
   const explainTitle = document.getElementById('explainTitle');
   const explainExtra = document.getElementById('explainExtra');
@@ -872,6 +921,11 @@
   const explainStepLine = document.getElementById('explainStepLine');
   const prevStepBtn = document.getElementById('prevStepBtn');
   const nextStepBtn = document.getElementById('nextStepBtn');
+
+  function stopExplanation(){
+    if (stopExplanationSpeech){ stopExplanationSpeech(); stopExplanationSpeech = null; }
+    if (window.speechSynthesis) speechSynthesis.cancel();
+  }
 
   function renderExplainStep(){
     const step = currentSteps[explainIndex];
@@ -881,7 +935,8 @@
     explainStepLine.textContent = 'Stap ' + (explainIndex + 1) + ' van ' + currentSteps.length;
     prevStepBtn.disabled = explainIndex === 0;
     nextStepBtn.textContent = (explainIndex === currentSteps.length - 1) ? 'Klaar ✔' : 'Volgende ▶';
-    speak(step.text, null);
+    stopExplanation();
+    stopExplanationSpeech = speakExplanation(step.text, null);
   }
 
   function openExplanation(steps, title){
@@ -897,13 +952,14 @@
   });
   nextStepBtn.addEventListener('click', () => {
     if (explainIndex < currentSteps.length - 1){ explainIndex++; renderExplainStep(); }
-    else { if (window.speechSynthesis) speechSynthesis.cancel(); showScreen(screenSetup); }
+    else { stopExplanation(); showScreen(screenSetup); }
   });
   document.getElementById('replayStepBtn').addEventListener('click', () => {
-    speak(currentSteps[explainIndex].text, null);
+    stopExplanation();
+    stopExplanationSpeech = speakExplanation(currentSteps[explainIndex].text, null);
   });
   document.getElementById('explainBackBtn').addEventListener('click', () => {
-    if (window.speechSynthesis) speechSynthesis.cancel();
+    stopExplanation();
     showScreen(screenSetup);
   });
   document.getElementById('explainLinkBtn').addEventListener('click', () => {
