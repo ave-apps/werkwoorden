@@ -124,6 +124,9 @@
   .verb-row label{
     width: 110px; flex-shrink:0; text-align:right; font-weight: 800; color: var(--ink-soft); font-size: 15px;
   }
+  .verb-row label.q-pronoun{
+    width:auto; text-align:left; padding-left: 2px;
+  }
   .verb-row input{
     flex:1; font-family: 'Baloo 2', sans-serif; font-size: 20px; font-weight: 700;
     padding: 8px 12px; border: none; border-bottom: 4px solid var(--outline);
@@ -354,7 +357,7 @@
   let currentVerb = null;
   let currentExpected = null; // array of 6 expected forms for the current verb+tense choice
   let currentRowTense = null; // array of 6 'present'/'past' labels, used for the mixed mode badges
-  let currentJijQuestion = false; // whether the jij-row (index 1) uses the vragende vorm this round
+  let currentQuestionRow = null; // array of 6 booleans: is this row shown/asked as a vragende zin?
   let lockedCount = 0;
   let correctCount = 0;
   let totalCount = 0;
@@ -446,20 +449,20 @@
 
     if (tenseMode === 'present'){
       currentRowTense = ['present','present','present','present','present','present'];
-      currentJijQuestion = questionModePresent;
+      currentQuestionRow = Array(6).fill(questionModePresent);
     } else if (tenseMode === 'past'){
       currentRowTense = ['past','past','past','past','past','past'];
-      currentJijQuestion = questionModePast; // has no effect on the actual form, kept for the heading note
+      currentQuestionRow = Array(6).fill(questionModePast);
     } else {
       currentRowTense = buildMixedRowTenses();
-      currentJijQuestion = (currentRowTense[1] === 'present') ? (Math.random() < 0.5) : false;
+      currentQuestionRow = PRONOUNS.map(() => Math.random() < 0.5);
     }
 
-    // The jij-vorm in a vragende zin (bijv. "Loop jij?") verliest de -t en wordt gelijk aan de ik-vorm.
-    // In de verleden tijd verandert er niets, dus dat geval heeft hier vanzelf geen effect.
+    // De jij-vorm in een vragende zin (bijv. "Word jij...?") verliest de -t en wordt gelijk aan de ik-vorm.
+    // In de verleden tijd verandert de vorm niet, alleen de woordvolgorde in de zin.
     currentExpected = currentRowTense.map((t, i) => {
       if (t === 'past') return currentVerb.formsPast[i];
-      if (i === 1 && currentJijQuestion) return currentVerb.formsPresent[0];
+      if (i === 1 && currentQuestionRow[i]) return currentVerb.formsPresent[0];
       return currentVerb.formsPresent[i];
     });
 
@@ -485,13 +488,22 @@
       if (tenseMode === 'mixed'){
         badges += '<span class="tense-badge ' + currentRowTense[i] + '">' + (currentRowTense[i] === 'past' ? 'toen' : 'nu') + '</span>';
       }
-      if (i === 1 && currentRowTense[i] === 'present' && currentJijQuestion){
+      if (i === 1 && currentRowTense[i] === 'present' && currentQuestionRow[i]){
         badges += '<span class="tense-badge question">vragend</span>';
       }
-      row.innerHTML =
-        '<label for="vinput' + i + '">' + label + badges + '</label>' +
-        '<input type="text" id="vinput' + i + '" data-index="' + i + '" autocomplete="off" autocapitalize="off" spellcheck="false">' +
-        '<span class="verb-check" id="vcheck' + i + '"></span>';
+      const inputHTML = '<input type="text" id="vinput' + i + '" data-index="' + i + '" autocomplete="off" autocapitalize="off" spellcheck="false">';
+      const checkHTML = '<span class="verb-check" id="vcheck' + i + '"></span>';
+      if (currentQuestionRow[i]){
+        // Vragende volgorde: werkwoord eerst, dan het voornaamwoord met vraagteken (bijv. "meldde ik?").
+        row.innerHTML = inputHTML +
+          '<label for="vinput' + i + '" class="q-pronoun">' + label + '?' + badges + '</label>' +
+          checkHTML;
+      } else {
+        row.innerHTML =
+          '<label for="vinput' + i + '">' + label + badges + '</label>' +
+          inputHTML +
+          checkHTML;
+      }
       verbForm.appendChild(row);
     });
     const submitBtn = document.createElement('button');
