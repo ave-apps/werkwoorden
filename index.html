@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Werkwoorden oefenen</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800&display=swap');
+
+  :root{
+    --paper: #F5F7FA;
+    --paper-line: #DCE6F0;
+    --ink: #223047;
+    --ink-soft: #5B6B82;
+    --gold: #FFC93C;
+    --gold-dark: #E8AE10;
+    --mint: #54C6A3;
+    --mint-dark: #2E9C7A;
+    --coral: #FF7A6E;
+    --coral-dark: #E75C50;
+    --card: #FFFFFF;
+    --outline: #B9C4D2;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0; padding:0; min-height:100%;
+    background:
+      repeating-linear-gradient(var(--paper) 0 39px, var(--paper-line) 39px 40px),
+      var(--paper);
+    font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+    color: var(--ink);
+  }
+
+  h1, h2, .verb-infinitive, .explain-title{
+    font-family: 'Baloo 2', 'Segoe UI Rounded', system-ui, sans-serif;
+  }
+
+  button{ font-family: inherit; cursor:pointer; }
+  button:focus-visible, input:focus-visible{ outline: 3px solid var(--ink); outline-offset: 3px; }
+
+  .wrap{ max-width: 620px; margin: 0 auto; padding: 28px 20px 60px; min-height: 100vh; }
+  .hidden{ display:none !important; }
+
+  /* ---------- Header ---------- */
+  .app-title{ font-size: clamp(28px, 6vw, 40px); font-weight: 800; text-align:center; margin: 6px 0 2px; }
+  .app-sub{ text-align:center; color: var(--ink-soft); font-weight: 700; margin: 0 0 28px; font-size: 15px; }
+
+  fieldset{ border:none; padding:0; margin:0 0 26px; }
+  legend{ font-weight: 800; font-size: 18px; padding: 0 0 12px; }
+
+  /* ---------- Mode cards ---------- */
+  .modes{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px){ .modes{ grid-template-columns: 1fr; } }
+  .mode-card{
+    background: var(--card); border: 3px solid transparent; border-radius: 16px;
+    padding: 16px; text-align:left; box-shadow: 0 3px 10px rgba(34,48,71,.08);
+  }
+  .mode-card h3{ margin: 0 0 6px; font-size: 17px; }
+  .mode-card p{ margin:0; color: var(--ink-soft); font-size: 14px; line-height:1.4; }
+  .mode-card.selected{ border-color: var(--mint-dark); background:#F1FBF7; }
+
+  .explain-link{
+    display:block; text-align:center; margin: 4px auto 0;
+    background: var(--card); border:none; border-radius: 999px;
+    padding: 10px 18px; font-weight:800; font-size:14px; color: var(--ink);
+    box-shadow: 0 3px 8px rgba(34,48,71,.10);
+  }
+
+  /* ---------- Buttons ---------- */
+  .cta{
+    display:block; width:100%; background: var(--gold); border: none; border-radius: 999px;
+    padding: 16px 20px; font-weight: 800; font-size: 19px; color: var(--ink);
+    box-shadow: 0 4px 0 var(--gold-dark); margin-top: 28px; transition: transform .08s ease;
+  }
+  .cta:active{ transform: translateY(3px); box-shadow: 0 1px 0 var(--gold-dark); }
+  .cta:disabled{ opacity:.5; box-shadow:none; cursor:not-allowed; }
+  .cta.secondary{ background: var(--mint); box-shadow: 0 4px 0 var(--mint-dark); }
+  .cta.ghost{ background: var(--card); color: var(--ink); box-shadow: 0 3px 10px rgba(34,48,71,.12); }
+
+  /* ---------- Topbar ---------- */
+  .topbar{ display:flex; align-items:center; gap:12px; margin-bottom: 10px; }
+  .icon-btn{
+    background:var(--card); border:none; border-radius:50%; width:42px; height:42px; font-size:18px;
+    box-shadow: 0 3px 8px rgba(34,48,71,.12); flex-shrink:0;
+  }
+  .topbar-spacer{ flex:1; }
+  .stop-btn{
+    background: var(--coral); color:#fff; border:none; border-radius: 999px;
+    padding: 10px 16px; font-weight:800; font-size:14px; box-shadow: 0 3px 0 var(--coral-dark); flex-shrink:0;
+  }
+  .progress-line{ text-align:center; font-weight:800; color: var(--ink-soft); font-size: 14px; margin-bottom: 18px; min-height: 18px; }
+
+  /* ---------- Verb card ---------- */
+  .verb-card{
+    background: var(--card); border-radius: 28px; padding: 30px 24px;
+    box-shadow: 0 10px 24px rgba(34,48,71,.10);
+  }
+  .verb-infinitive{
+    text-align:center; font-size: clamp(30px, 8vw, 42px); font-weight: 800; margin-bottom: 4px;
+  }
+  .verb-heading{
+    text-align:center; color: var(--ink-soft); font-weight: 800; font-size: 14px;
+    text-transform: lowercase; margin-bottom: 20px;
+  }
+  .verb-row{ display:flex; align-items:center; gap: 12px; margin-bottom: 12px; }
+  .verb-row label{
+    width: 110px; flex-shrink:0; text-align:right; font-weight: 800; color: var(--ink-soft); font-size: 15px;
+  }
+  .verb-row input{
+    flex:1; font-family: 'Baloo 2', sans-serif; font-size: 20px; font-weight: 700;
+    padding: 8px 12px; border: none; border-bottom: 4px solid var(--outline);
+    background: transparent; color: var(--ink);
+  }
+  .verb-row input:focus{ outline:none; border-bottom-color: var(--mint-dark); }
+  .verb-row input.correct{ border-bottom-color: var(--mint-dark); background:#F1FBF7; color: var(--mint-dark); }
+  .verb-row input.wrong{ border-bottom-color: var(--coral-dark); animation: shake .35s ease; }
+  .verb-check{ width: 22px; flex-shrink:0; text-align:center; font-size: 18px; color: var(--mint-dark); }
+
+  @keyframes shake{
+    0%,100%{ transform: translateX(0); }
+    20%{ transform: translateX(-8px); }
+    40%{ transform: translateX(6px); }
+    60%{ transform: translateX(-5px); }
+    80%{ transform: translateX(3px); }
+  }
+
+  .feedback{ min-height: 24px; margin-top: 10px; font-weight: 800; font-size: 15px; text-align:center; }
+  .feedback.correct{ color: var(--mint-dark); }
+  .feedback.wrong{ color: var(--coral-dark); }
+
+  /* ---------- Explanation screen ---------- */
+  .explain-card{ text-align:left; }
+  .explain-title{ font-weight: 800; font-size: 19px; margin-bottom: 12px; }
+  .explain-text{ font-size: 16px; line-height: 1.55; margin:0 0 6px; }
+  .step-nav{ display:flex; align-items:center; gap:10px; margin-top: 22px; }
+  .step-nav .cta{ margin-top:0; flex:1; }
+  .step-nav .icon-btn{ flex-shrink:0; }
+
+  .compare-table{ width:100%; border-collapse: collapse; margin: 8px 0 14px; }
+  .compare-table th{
+    font-family:'Baloo 2'; font-size: 15px; text-align:left; padding: 6px 8px;
+    border-bottom: 2px solid var(--outline); color: var(--ink-soft);
+  }
+  .compare-table td{ padding: 6px 8px; font-size: 15px; border-bottom: 1px solid var(--paper-line); }
+  .compare-table td.pron{ color: var(--ink-soft); font-weight:700; width: 40%; }
+  .compare-table td.form{ font-family:'Baloo 2'; font-weight:700; }
+  .compare-table .highlight{ color: var(--coral-dark); font-weight:800; }
+
+  /* ---------- End screen ---------- */
+  .end-emoji{ font-size: 56px; text-align:center; }
+  .end-title{ text-align:center; font-size: 26px; font-weight:800; margin: 4px 0 6px; }
+  .end-sub{ text-align:center; color: var(--ink-soft); margin-bottom: 26px; }
+
+  footer{ text-align:center; margin-top: 40px; font-size: 12px; color: var(--ink-soft); }
+
+  @media (prefers-reduced-motion: reduce){ .verb-row input.wrong{ animation:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <section id="screen-setup">
+    <h1 class="app-title">Werkwoorden oefenen</h1>
+    <p class="app-sub">Typ de werkwoordsvorm bij elk persoonlijk voornaamwoord.</p>
+
+    <fieldset>
+      <legend>Welke werkwoorden wil je oefenen?</legend>
+      <div class="modes">
+        <button type="button" class="mode-card selected" data-pool="all">
+          <h3>📚 Alle werkwoorden</h3>
+          <p>Een brede mix van gewone werkwoorden.</p>
+        </button>
+        <button type="button" class="mode-card" data-pool="dt">
+          <h3>✏️ Moeilijke -t / -dt</h3>
+          <p>Alleen werkwoorden waarbij je moet opletten op -t of -dt.</p>
+        </button>
+      </div>
+    </fieldset>
+
+    <button type="button" class="explain-link" id="explainLinkBtn">📖 Uitleg: het -dt-trucje met 'lopen'</button>
+
+    <button type="button" class="cta" id="startBtn">Beginnen</button>
+
+    <footer>een oefening van ave-apps</footer>
+  </section>
+
+  <!-- ============ PRACTICE SCREEN ============ -->
+  <section id="screen-practice" class="hidden">
+    <div class="topbar">
+      <button type="button" class="icon-btn" id="backBtn" aria-label="Terug naar begin" title="Terug naar begin">←</button>
+      <div class="topbar-spacer"></div>
+      <button type="button" class="icon-btn" id="muteBtn" aria-label="Geluid aan/uit" title="Geluid aan/uit">🔊</button>
+      <button type="button" class="stop-btn" id="stopBtn">Stoppen</button>
+    </div>
+
+    <div class="progress-line" id="progressLine" aria-live="polite"></div>
+
+    <div class="verb-card">
+      <div class="verb-infinitive" id="verbInfinitive">lopen</div>
+      <div class="verb-heading">tegenwoordige tijd</div>
+      <form id="verbForm"></form>
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ============ EXPLANATION SCREEN ============ -->
+  <section id="screen-explain" class="hidden">
+    <div class="topbar">
+      <button type="button" class="icon-btn" id="explainBackBtn" aria-label="Terug naar begin" title="Terug naar begin">←</button>
+      <div class="topbar-spacer"></div>
+      <button type="button" class="icon-btn" id="explainMuteBtn" aria-label="Geluid aan/uit" title="Geluid aan/uit">🔊</button>
+    </div>
+    <h1 class="app-title" style="font-size:26px;">Het -dt-trucje met 'lopen'</h1>
+    <div class="progress-line" id="explainStepLine"></div>
+
+    <div class="verb-card explain-card">
+      <div class="explain-title" id="explainTitle"></div>
+      <div id="explainExtra"></div>
+      <p class="explain-text" id="explainText"></p>
+    </div>
+
+    <div class="step-nav">
+      <button type="button" class="cta ghost" id="prevStepBtn">◀ Vorige</button>
+      <button type="button" class="icon-btn" id="replayStepBtn" aria-label="Lees voor" title="Lees voor">🔊</button>
+      <button type="button" class="cta secondary" id="nextStepBtn">Volgende ▶</button>
+    </div>
+  </section>
+
+  <!-- ============ END SCREEN ============ -->
+  <section id="screen-end" class="hidden">
+    <div class="end-emoji">📝</div>
+    <div class="end-title" id="endTitle">Goed gedaan!</div>
+    <p class="end-sub" id="endSub"></p>
+    <button type="button" class="cta secondary" id="againBtn">Opnieuw oefenen</button>
+    <button type="button" class="cta ghost" id="toSetupBtn">Terug naar begin</button>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const PRONOUNS = ['ik', 'jij', 'hij / zij / het', 'wij', 'jullie', 'zij'];
+
+  // Every verb: infinitief + the six tegenwoordige-tijd forms in the order above.
+  // "dt": true marks the verbs that specifically drill the -t / -dt / no-extra-t spelling rule.
+  const VERBS = [
+    { infinitief: 'lopen',      forms: ['loop','loopt','loopt','lopen','lopen','lopen'],           dt:false },
+    { infinitief: 'spelen',     forms: ['speel','speelt','speelt','spelen','spelen','spelen'],     dt:false },
+    { infinitief: 'maken',      forms: ['maak','maakt','maakt','maken','maken','maken'],           dt:false },
+    { infinitief: 'wonen',      forms: ['woon','woont','woont','wonen','wonen','wonen'],           dt:false },
+    { infinitief: 'werken',     forms: ['werk','werkt','werkt','werken','werken','werken'],        dt:false },
+    { infinitief: 'leren',      forms: ['leer','leert','leert','leren','leren','leren'],           dt:false },
+    { infinitief: 'horen',      forms: ['hoor','hoort','hoort','horen','horen','horen'],           dt:false },
+    { infinitief: 'kijken',     forms: ['kijk','kijkt','kijkt','kijken','kijken','kijken'],        dt:false },
+    { infinitief: 'lezen',      forms: ['lees','leest','leest','lezen','lezen','lezen'],           dt:false },
+    { infinitief: 'roepen',     forms: ['roep','roept','roept','roepen','roepen','roepen'],        dt:false },
+    { infinitief: 'praten',     forms: ['praat','praat','praat','praten','praten','praten'],       dt:true },
+    { infinitief: 'zitten',     forms: ['zit','zit','zit','zitten','zitten','zitten'],              dt:true },
+    { infinitief: 'wachten',    forms: ['wacht','wacht','wacht','wachten','wachten','wachten'],     dt:true },
+    { infinitief: 'weten',      forms: ['weet','weet','weet','weten','weten','weten'],              dt:true },
+    { infinitief: 'worden',     forms: ['word','wordt','wordt','worden','worden','worden'],         dt:true },
+    { infinitief: 'houden',     forms: ['houd','houdt','houdt','houden','houden','houden'],         dt:true },
+    { infinitief: 'antwoorden', forms: ['antwoord','antwoordt','antwoordt','antwoorden','antwoorden','antwoorden'], dt:true },
+    { infinitief: 'landen',     forms: ['land','landt','landt','landen','landen','landen'],         dt:true },
+    { infinitief: 'melden',     forms: ['meld','meldt','meldt','melden','melden','melden'],         dt:true },
+    { infinitief: 'rijden',     forms: ['rijd','rijdt','rijdt','rijden','rijden','rijden'],         dt:true }
+  ];
+
+  /* ---------------- Speech ---------------- */
+  let nlVoice = null;
+  let muted = false;
+  function pickVoice(){
+    const voices = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+    nlVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('nl')) || null;
+  }
+  if (window.speechSynthesis){
+    pickVoice();
+    speechSynthesis.onvoiceschanged = pickVoice;
+  }
+  function speak(text, onEnd){
+    if (muted || !window.speechSynthesis){
+      if (onEnd) setTimeout(onEnd, 900);
+      return;
+    }
+    speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'nl-NL';
+    if (nlVoice) utter.voice = nlVoice;
+    utter.rate = 0.95;
+    let done = false;
+    const finish = () => { if (!done){ done = true; if (onEnd) onEnd(); } };
+    utter.onend = finish;
+    utter.onerror = finish;
+    setTimeout(finish, 6000);
+    speechSynthesis.speak(utter);
+  }
+
+  /* ---------------- State ---------------- */
+  let pool = 'all';
+  let queue = [];
+  let queueIndex = 0;
+  let currentVerb = null;
+  let lockedCount = 0;
+  let correctCount = 0;
+  let totalCount = 0;
+
+  function shuffle(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  document.querySelectorAll('.mode-card[data-pool]').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.mode-card[data-pool]').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      pool = card.dataset.pool;
+    });
+  });
+
+  document.getElementById('startBtn').addEventListener('click', startSession);
+
+  /* ---------------- Screens ---------------- */
+  const screenSetup = document.getElementById('screen-setup');
+  const screenPractice = document.getElementById('screen-practice');
+  const screenExplain = document.getElementById('screen-explain');
+  const screenEnd = document.getElementById('screen-end');
+  function showScreen(el){
+    [screenSetup, screenPractice, screenExplain, screenEnd].forEach(s => s.classList.add('hidden'));
+    el.classList.remove('hidden');
+  }
+
+  /* ---------------- Session ---------------- */
+  function buildQueue(){
+    const source = (pool === 'dt') ? VERBS.filter(v => v.dt) : VERBS.slice();
+    return shuffle(source.slice());
+  }
+
+  function startSession(){
+    correctCount = 0;
+    totalCount = 0;
+    queue = buildQueue();
+    queueIndex = 0;
+    showScreen(screenPractice);
+    nextVerb();
+  }
+
+  const verbInfinitive = document.getElementById('verbInfinitive');
+  const verbForm = document.getElementById('verbForm');
+  const feedback = document.getElementById('feedback');
+  const progressLine = document.getElementById('progressLine');
+
+  function nextVerb(){
+    if (queueIndex >= queue.length){ queue = buildQueue(); queueIndex = 0; }
+    currentVerb = queue[queueIndex];
+    lockedCount = 0;
+    feedback.textContent = '';
+    feedback.className = 'feedback';
+    verbInfinitive.textContent = currentVerb.infinitief;
+    renderForm();
+    updateProgressLine();
+  }
+
+  function renderForm(){
+    verbForm.innerHTML = '';
+    PRONOUNS.forEach((label, i) => {
+      const row = document.createElement('div');
+      row.className = 'verb-row';
+      row.innerHTML =
+        '<label for="vinput' + i + '">' + label + '</label>' +
+        '<input type="text" id="vinput' + i + '" data-index="' + i + '" autocomplete="off" autocapitalize="off" spellcheck="false">' +
+        '<span class="verb-check" id="vcheck' + i + '"></span>';
+      verbForm.appendChild(row);
+    });
+    const submitBtn = document.createElement('button');
+    submitBtn.type = 'submit';
+    submitBtn.className = 'cta';
+    submitBtn.textContent = 'Controleer';
+    verbForm.appendChild(submitBtn);
+    setTimeout(() => { const first = document.getElementById('vinput0'); if (first) first.focus(); }, 30);
+  }
+
+  function updateProgressLine(){
+    progressLine.textContent = 'Werkwoorden goed: ' + correctCount;
+  }
+
+  verbForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    checkForm();
+  });
+
+  function checkForm(){
+    let allCorrect = true;
+    let anyNewlyChecked = false;
+    for (let i = 0; i < PRONOUNS.length; i++){
+      const input = document.getElementById('vinput' + i);
+      const check = document.getElementById('vcheck' + i);
+      if (input.disabled){ continue; } // already locked correct
+      anyNewlyChecked = true;
+      const given = input.value.trim().toLowerCase();
+      const expected = currentVerb.forms[i].toLowerCase();
+      if (given !== ''){
+        if (given === expected){
+          input.classList.remove('wrong');
+          input.classList.add('correct');
+          input.disabled = true;
+          check.textContent = '✅';
+          lockedCount++;
+        } else {
+          input.classList.remove('correct');
+          input.classList.add('wrong');
+          setTimeout(() => input.classList.remove('wrong'), 400);
+          allCorrect = false;
+        }
+      } else {
+        allCorrect = false;
+      }
+    }
+    if (!anyNewlyChecked) return;
+
+    if (lockedCount === PRONOUNS.length){
+      totalCount++;
+      correctCount++;
+      updateProgressLine();
+      feedback.className = 'feedback correct';
+      feedback.textContent = 'Helemaal goed! ✅';
+      const minVisible = 1300; // keep the green checkmarks on screen even if speech fails or ends instantly
+      const startTime = Date.now();
+      let advanced = false;
+      const doAdvance = () => {
+        if (advanced) return;
+        advanced = true;
+        queueIndex++;
+        nextVerb();
+      };
+      speak('Goed zo!', () => {
+        const remaining = minVisible - (Date.now() - startTime);
+        setTimeout(doAdvance, Math.max(0, remaining));
+      });
+      setTimeout(doAdvance, minVisible + 2000); // hard safety net
+    } else {
+      feedback.className = 'feedback wrong';
+      feedback.textContent = allCorrect ? 'Vul eerst alle velden in.' : 'Nog niet alles goed — kijk naar de rode velden.';
+    }
+  }
+
+  /* ---------------- Stop / navigation ---------------- */
+  function endSession(){
+    const endTitle = document.getElementById('endTitle');
+    const endSub = document.getElementById('endSub');
+    endTitle.textContent = 'Goed geoefend! 📝';
+    endSub.textContent = correctCount > 0
+      ? 'Je hebt ' + correctCount + ' werkwoord(en) helemaal goed vervoegd.'
+      : 'Tot de volgende keer!';
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    showScreen(screenEnd);
+  }
+
+  document.getElementById('stopBtn').addEventListener('click', endSession);
+  document.getElementById('backBtn').addEventListener('click', () => {
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    showScreen(screenSetup);
+  });
+  document.getElementById('toSetupBtn').addEventListener('click', () => showScreen(screenSetup));
+  document.getElementById('againBtn').addEventListener('click', startSession);
+
+  const muteBtn = document.getElementById('muteBtn');
+  const explainMuteBtn = document.getElementById('explainMuteBtn');
+  function toggleMute(){
+    muted = !muted;
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    explainMuteBtn.textContent = muted ? '🔇' : '🔊';
+    if (muted && window.speechSynthesis) speechSynthesis.cancel();
+  }
+  muteBtn.addEventListener('click', toggleMute);
+  explainMuteBtn.addEventListener('click', toggleMute);
+
+  /* ================= Explanation module ================= */
+  function compareTableHTML(rows, verbName){
+    let html = '<table class="compare-table"><thead><tr><th></th><th>lopen</th><th>' + verbName + '</th></tr></thead><tbody>';
+    rows.forEach(r => {
+      html += '<tr><td class="pron">' + r.pron + '</td><td class="form">' + r.loop + '</td><td class="form' + (r.hl ? ' highlight' : '') + '">' + r.target + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  const EXPLAIN_STEPS = [
+    {
+      title: 'Het probleem',
+      text: 'Moet je nu \u2018word\u2019 of \u2018wordt\u2019 schrijven bij hij/zij/het? En \u2018houd\u2019 of \u2018houdt\u2019? Daar is een handig trucje voor, met het werkwoord \u2018lopen\u2019.',
+      extra: ''
+    },
+    {
+      title: 'Waarom juist \u2018lopen\u2019?',
+      text: '\u2018Lopen\u2019 is fijn als hulpmiddel omdat het nooit verwarrend is: geen dubbele letters, geen d of t die je zou kunnen vergeten. Onthoud dit rijtje goed.',
+      extra: compareTableHTML([
+        {pron:'ik', loop:'loop', target:'loop'},
+        {pron:'jij', loop:'loopt', target:'loopt'},
+        {pron:'hij / zij / het', loop:'loopt', target:'loopt'},
+        {pron:'wij', loop:'lopen', target:'lopen'},
+        {pron:'jullie', loop:'lopen', target:'lopen'},
+        {pron:'zij', loop:'lopen', target:'lopen'}
+      ], 'lopen')
+    },
+    {
+      title: 'Het trucje',
+      text: 'Twijfel je over een ander werkwoord, bijvoorbeeld \u2018worden\u2019? Vervang het dan in gedachten even door \u2018lopen\u2019, en kijk wat er op dezelfde plek in de zin met \u2018lopen\u2019 gebeurt.',
+      extra: ''
+    },
+    {
+      title: 'Stap 1: de ik-vorm',
+      text: '\u2018Ik loop\u2019 krijgt geen extra t. Dus krijgt \u2018ik word\u2019 ook geen extra t \u2014 net zoals bij lopen.',
+      extra: compareTableHTML([{pron:'ik', loop:'loop', target:'word'}], 'worden')
+    },
+    {
+      title: 'Stap 2: jij en hij/zij/het',
+      text: '\u2018Jij loopt\u2019 en \u2018hij loopt\u2019 krijgen wél een extra t. Dus krijgt \u2018jij word\u2019 en \u2018hij word\u2019 ook een t: word + t. Maar \u2018word\u2019 eindigt al op een d \u2014 samen met de extra t wordt dat dus -dt: wordt!',
+      extra: compareTableHTML([
+        {pron:'jij', loop:'loopt', target:'wordt', hl:true},
+        {pron:'hij / zij / het', loop:'loopt', target:'wordt', hl:true}
+      ], 'worden')
+    },
+    {
+      title: 'De hele regel',
+      text: 'Dat is het hele geheim: bepaal de t net als bij \u2018lopen\u2019. Eindigt het woord toevallig al op een d? Dan krijg je -dt. Eindigt het al op een t (zoals bij \u2018zitten\u2019: ik zit, hij zit)? Dan hoef je geen extra t toe te voegen \u2014 dat zou immers ook niet gebeuren bij \u2018lopen\u2019 als de stam al op t eindigde.',
+      extra: ''
+    },
+    {
+      title: 'Nog een voorbeeld: houden',
+      text: '\u2018Ik loop\u2019 \u2192 \u2018ik houd\u2019 (geen extra t). \u2018Jij loopt, hij loopt\u2019 \u2192 \u2018jij houdt, hij houdt\u2019 (houd eindigt al op d, plus de t van lopen geeft -dt).',
+      extra: compareTableHTML([
+        {pron:'ik', loop:'loop', target:'houd'},
+        {pron:'jij', loop:'loopt', target:'houdt', hl:true},
+        {pron:'hij / zij / het', loop:'loopt', target:'houdt', hl:true}
+      ], 'houden')
+    },
+    {
+      title: 'Aan de slag!',
+      text: 'Gebruik dit trucje steeds als je twijfelt. Ga nu oefenen met de werkwoorden \u2014 sluit deze uitleg en klik op \u2018Beginnen\u2019.',
+      extra: ''
+    }
+  ];
+
+  let explainIndex = 0;
+  const explainTitle = document.getElementById('explainTitle');
+  const explainExtra = document.getElementById('explainExtra');
+  const explainText = document.getElementById('explainText');
+  const explainStepLine = document.getElementById('explainStepLine');
+  const prevStepBtn = document.getElementById('prevStepBtn');
+  const nextStepBtn = document.getElementById('nextStepBtn');
+
+  function renderExplainStep(){
+    const step = EXPLAIN_STEPS[explainIndex];
+    explainTitle.textContent = step.title;
+    explainExtra.innerHTML = step.extra || '';
+    explainText.textContent = step.text;
+    explainStepLine.textContent = 'Stap ' + (explainIndex + 1) + ' van ' + EXPLAIN_STEPS.length;
+    prevStepBtn.disabled = explainIndex === 0;
+    nextStepBtn.textContent = (explainIndex === EXPLAIN_STEPS.length - 1) ? 'Klaar ✔' : 'Volgende ▶';
+    speak(step.text, null);
+  }
+
+  prevStepBtn.addEventListener('click', () => {
+    if (explainIndex > 0){ explainIndex--; renderExplainStep(); }
+  });
+  nextStepBtn.addEventListener('click', () => {
+    if (explainIndex < EXPLAIN_STEPS.length - 1){ explainIndex++; renderExplainStep(); }
+    else { if (window.speechSynthesis) speechSynthesis.cancel(); showScreen(screenSetup); }
+  });
+  document.getElementById('replayStepBtn').addEventListener('click', () => {
+    speak(EXPLAIN_STEPS[explainIndex].text, null);
+  });
+  document.getElementById('explainBackBtn').addEventListener('click', () => {
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    showScreen(screenSetup);
+  });
+  document.getElementById('explainLinkBtn').addEventListener('click', () => {
+    explainIndex = 0;
+    showScreen(screenExplain);
+    renderExplainStep();
+  });
+
+})();
+</script>
+</body>
+</html>
