@@ -52,6 +52,8 @@
 
   /* ---------- Mode cards ---------- */
   .modes{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modes3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 620px){ .modes3{ grid-template-columns: 1fr; } }
   @media (max-width: 480px){ .modes{ grid-template-columns: 1fr; } }
   .mode-card{
     background: var(--card); border: 3px solid transparent; border-radius: 16px;
@@ -60,6 +62,20 @@
   .mode-card h3{ margin: 0 0 6px; font-size: 17px; }
   .mode-card p{ margin:0; color: var(--ink-soft); font-size: 14px; line-height:1.4; }
   .mode-card.selected{ border-color: var(--mint-dark); background:#F1FBF7; }
+
+  .tense-badge{
+    display:inline-block; font-size: 11px; font-weight:800; padding: 2px 8px;
+    border-radius: 999px; margin-left: 8px; vertical-align: middle;
+  }
+  .tense-badge.present{ background:#F1FBF7; color: var(--mint-dark); }
+  .tense-badge.past{ background:#FFF3F1; color: var(--coral-dark); }
+  .tense-badge.question{ background:#FFF6DD; color: var(--gold-dark); }
+
+  .qmode-toggle{
+    display:flex; align-items:center; gap:8px; margin-top: 12px;
+    font-size: 13px; font-weight:700; color: var(--ink-soft); cursor:pointer;
+  }
+  .qmode-toggle input{ width:16px; height:16px; accent-color: var(--mint-dark); cursor:pointer; }
 
   .explain-link{
     display:block; text-align:center; margin: 4px auto 0;
@@ -167,6 +183,32 @@
     <p class="app-sub">Typ de werkwoordsvorm bij elk persoonlijk voornaamwoord.</p>
 
     <fieldset>
+      <legend>Welke tijd wil je oefenen?</legend>
+      <div class="modes3">
+        <div class="mode-card selected" data-tense="present" tabindex="0" role="button">
+          <h3>🕐 Tegenwoordige tijd</h3>
+          <p>ik loop, jij loopt, hij loopt...</p>
+          <label class="qmode-toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="questionPresentCheck">
+            <span>+ vragende vorm (loop jij?)</span>
+          </label>
+        </div>
+        <div class="mode-card" data-tense="past" tabindex="0" role="button">
+          <h3>⏪ Verleden tijd</h3>
+          <p>ik liep, jij liep, hij liep...</p>
+          <label class="qmode-toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="questionPastCheck">
+            <span>+ vragende vorm (liep jij?)</span>
+          </label>
+        </div>
+        <div class="mode-card" data-tense="mixed" tabindex="0" role="button">
+          <h3>🔀 Door elkaar</h3>
+          <p>bijv. ik word, jij werd, hij wordt, wij werden... (alle vormen mogelijk)</p>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
       <legend>Welke werkwoorden wil je oefenen?</legend>
       <div class="modes">
         <button type="button" class="mode-card selected" data-pool="all">
@@ -181,6 +223,7 @@
     </fieldset>
 
     <button type="button" class="explain-link" id="explainLinkBtn">📖 Uitleg: het -dt-trucje met 'lopen'</button>
+    <button type="button" class="explain-link" id="kofschipLinkBtn" style="margin-top:10px;">📖 Uitleg: 't Kofschip</button>
 
     <button type="button" class="cta" id="startBtn">Beginnen</button>
 
@@ -200,7 +243,7 @@
 
     <div class="verb-card">
       <div class="verb-infinitive" id="verbInfinitive">lopen</div>
-      <div class="verb-heading">tegenwoordige tijd</div>
+      <div class="verb-heading" id="verbHeading">tegenwoordige tijd</div>
       <form id="verbForm"></form>
       <div class="feedback" id="feedback" aria-live="polite"></div>
     </div>
@@ -213,7 +256,7 @@
       <div class="topbar-spacer"></div>
       <button type="button" class="icon-btn" id="explainMuteBtn" aria-label="Geluid aan/uit" title="Geluid aan/uit">🔊</button>
     </div>
-    <h1 class="app-title" style="font-size:26px;">Het -dt-trucje met 'lopen'</h1>
+    <h1 class="app-title" style="font-size:26px;" id="explainScreenTitle">Het -dt-trucje met 'lopen'</h1>
     <div class="progress-line" id="explainStepLine"></div>
 
     <div class="verb-card explain-card">
@@ -246,29 +289,30 @@
 
   const PRONOUNS = ['ik', 'jij', 'hij / zij / het', 'wij', 'jullie', 'zij'];
 
-  // Every verb: infinitief + the six tegenwoordige-tijd forms in the order above.
-  // "dt": true marks the verbs that specifically drill the -t / -dt / no-extra-t spelling rule.
+  // Every verb: infinitief + the six tegenwoordige-tijd forms and the six verleden-tijd forms,
+  // in the order above. "dt": true marks the verbs that specifically drill the -t / -dt / no-extra-t
+  // spelling rule in the tegenwoordige tijd.
   const VERBS = [
-    { infinitief: 'lopen',      forms: ['loop','loopt','loopt','lopen','lopen','lopen'],           dt:false },
-    { infinitief: 'spelen',     forms: ['speel','speelt','speelt','spelen','spelen','spelen'],     dt:false },
-    { infinitief: 'maken',      forms: ['maak','maakt','maakt','maken','maken','maken'],           dt:false },
-    { infinitief: 'wonen',      forms: ['woon','woont','woont','wonen','wonen','wonen'],           dt:false },
-    { infinitief: 'werken',     forms: ['werk','werkt','werkt','werken','werken','werken'],        dt:false },
-    { infinitief: 'leren',      forms: ['leer','leert','leert','leren','leren','leren'],           dt:false },
-    { infinitief: 'horen',      forms: ['hoor','hoort','hoort','horen','horen','horen'],           dt:false },
-    { infinitief: 'kijken',     forms: ['kijk','kijkt','kijkt','kijken','kijken','kijken'],        dt:false },
-    { infinitief: 'lezen',      forms: ['lees','leest','leest','lezen','lezen','lezen'],           dt:false },
-    { infinitief: 'roepen',     forms: ['roep','roept','roept','roepen','roepen','roepen'],        dt:false },
-    { infinitief: 'praten',     forms: ['praat','praat','praat','praten','praten','praten'],       dt:true },
-    { infinitief: 'zitten',     forms: ['zit','zit','zit','zitten','zitten','zitten'],              dt:true },
-    { infinitief: 'wachten',    forms: ['wacht','wacht','wacht','wachten','wachten','wachten'],     dt:true },
-    { infinitief: 'weten',      forms: ['weet','weet','weet','weten','weten','weten'],              dt:true },
-    { infinitief: 'worden',     forms: ['word','wordt','wordt','worden','worden','worden'],         dt:true },
-    { infinitief: 'houden',     forms: ['houd','houdt','houdt','houden','houden','houden'],         dt:true },
-    { infinitief: 'antwoorden', forms: ['antwoord','antwoordt','antwoordt','antwoorden','antwoorden','antwoorden'], dt:true },
-    { infinitief: 'landen',     forms: ['land','landt','landt','landen','landen','landen'],         dt:true },
-    { infinitief: 'melden',     forms: ['meld','meldt','meldt','melden','melden','melden'],         dt:true },
-    { infinitief: 'rijden',     forms: ['rijd','rijdt','rijdt','rijden','rijden','rijden'],         dt:true }
+    { infinitief: 'lopen',      formsPresent: ['loop','loopt','loopt','lopen','lopen','lopen'],           formsPast: ['liep','liep','liep','liepen','liepen','liepen'],                         dt:false },
+    { infinitief: 'spelen',     formsPresent: ['speel','speelt','speelt','spelen','spelen','spelen'],     formsPast: ['speelde','speelde','speelde','speelden','speelden','speelden'],           dt:false },
+    { infinitief: 'maken',      formsPresent: ['maak','maakt','maakt','maken','maken','maken'],           formsPast: ['maakte','maakte','maakte','maakten','maakten','maakten'],                 dt:false },
+    { infinitief: 'wonen',      formsPresent: ['woon','woont','woont','wonen','wonen','wonen'],           formsPast: ['woonde','woonde','woonde','woonden','woonden','woonden'],                 dt:false },
+    { infinitief: 'werken',     formsPresent: ['werk','werkt','werkt','werken','werken','werken'],        formsPast: ['werkte','werkte','werkte','werkten','werkten','werkten'],                 dt:false },
+    { infinitief: 'leren',      formsPresent: ['leer','leert','leert','leren','leren','leren'],           formsPast: ['leerde','leerde','leerde','leerden','leerden','leerden'],                 dt:false },
+    { infinitief: 'horen',      formsPresent: ['hoor','hoort','hoort','horen','horen','horen'],           formsPast: ['hoorde','hoorde','hoorde','hoorden','hoorden','hoorden'],                 dt:false },
+    { infinitief: 'kijken',     formsPresent: ['kijk','kijkt','kijkt','kijken','kijken','kijken'],        formsPast: ['keek','keek','keek','keken','keken','keken'],                             dt:false },
+    { infinitief: 'lezen',      formsPresent: ['lees','leest','leest','lezen','lezen','lezen'],           formsPast: ['las','las','las','lazen','lazen','lazen'],                                dt:false },
+    { infinitief: 'roepen',     formsPresent: ['roep','roept','roept','roepen','roepen','roepen'],        formsPast: ['riep','riep','riep','riepen','riepen','riepen'],                          dt:false },
+    { infinitief: 'praten',     formsPresent: ['praat','praat','praat','praten','praten','praten'],       formsPast: ['praatte','praatte','praatte','praatten','praatten','praatten'],           dt:true },
+    { infinitief: 'zitten',     formsPresent: ['zit','zit','zit','zitten','zitten','zitten'],              formsPast: ['zat','zat','zat','zaten','zaten','zaten'],                                dt:true },
+    { infinitief: 'wachten',    formsPresent: ['wacht','wacht','wacht','wachten','wachten','wachten'],     formsPast: ['wachtte','wachtte','wachtte','wachtten','wachtten','wachtten'],           dt:true },
+    { infinitief: 'weten',      formsPresent: ['weet','weet','weet','weten','weten','weten'],              formsPast: ['wist','wist','wist','wisten','wisten','wisten'],                          dt:true },
+    { infinitief: 'worden',     formsPresent: ['word','wordt','wordt','worden','worden','worden'],         formsPast: ['werd','werd','werd','werden','werden','werden'],                          dt:true },
+    { infinitief: 'houden',     formsPresent: ['houd','houdt','houdt','houden','houden','houden'],         formsPast: ['hield','hield','hield','hielden','hielden','hielden'],                    dt:true },
+    { infinitief: 'antwoorden', formsPresent: ['antwoord','antwoordt','antwoordt','antwoorden','antwoorden','antwoorden'], formsPast: ['antwoordde','antwoordde','antwoordde','antwoordden','antwoordden','antwoordden'], dt:true },
+    { infinitief: 'landen',     formsPresent: ['land','landt','landt','landen','landen','landen'],         formsPast: ['landde','landde','landde','landden','landden','landden'],                 dt:true },
+    { infinitief: 'melden',     formsPresent: ['meld','meldt','meldt','melden','melden','melden'],         formsPast: ['meldde','meldde','meldde','meldden','meldden','meldden'],                 dt:true },
+    { infinitief: 'rijden',     formsPresent: ['rijd','rijdt','rijdt','rijden','rijden','rijden'],         formsPast: ['reed','reed','reed','reden','reden','reden'],                             dt:true }
   ];
 
   /* ---------------- Speech ---------------- */
@@ -302,9 +346,15 @@
 
   /* ---------------- State ---------------- */
   let pool = 'all';
+  let tenseMode = 'present'; // 'present' | 'past' | 'mixed'
+  let questionModePresent = false;
+  let questionModePast = false;
   let queue = [];
   let queueIndex = 0;
   let currentVerb = null;
+  let currentExpected = null; // array of 6 expected forms for the current verb+tense choice
+  let currentRowTense = null; // array of 6 'present'/'past' labels, used for the mixed mode badges
+  let currentJijQuestion = false; // whether the jij-row (index 1) uses the vragende vorm this round
   let lockedCount = 0;
   let correctCount = 0;
   let totalCount = 0;
@@ -317,12 +367,34 @@
     return arr;
   }
 
+  function makeCardClickable(card, onActivate){
+    card.addEventListener('click', onActivate);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); onActivate(); }
+    });
+  }
+
   document.querySelectorAll('.mode-card[data-pool]').forEach(card => {
-    card.addEventListener('click', () => {
+    makeCardClickable(card, () => {
       document.querySelectorAll('.mode-card[data-pool]').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       pool = card.dataset.pool;
     });
+  });
+
+  document.querySelectorAll('.mode-card[data-tense]').forEach(card => {
+    makeCardClickable(card, () => {
+      document.querySelectorAll('.mode-card[data-tense]').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      tenseMode = card.dataset.tense;
+    });
+  });
+
+  document.getElementById('questionPresentCheck').addEventListener('change', (e) => {
+    questionModePresent = e.target.checked;
+  });
+  document.getElementById('questionPastCheck').addEventListener('change', (e) => {
+    questionModePast = e.target.checked;
   });
 
   document.getElementById('startBtn').addEventListener('click', startSession);
@@ -353,17 +425,53 @@
   }
 
   const verbInfinitive = document.getElementById('verbInfinitive');
+  const verbHeading = document.getElementById('verbHeading');
   const verbForm = document.getElementById('verbForm');
   const feedback = document.getElementById('feedback');
   const progressLine = document.getElementById('progressLine');
 
+  function buildMixedRowTenses(){
+    // guarantee at least one of each so it's genuinely mixed
+    let rowTenses;
+    for (let attempt = 0; attempt < 20; attempt++){
+      rowTenses = PRONOUNS.map(() => (Math.random() < 0.5 ? 'present' : 'past'));
+      if (rowTenses.includes('present') && rowTenses.includes('past')) break;
+    }
+    return rowTenses;
+  }
+
   function nextVerb(){
     if (queueIndex >= queue.length){ queue = buildQueue(); queueIndex = 0; }
     currentVerb = queue[queueIndex];
+
+    if (tenseMode === 'present'){
+      currentRowTense = ['present','present','present','present','present','present'];
+      currentJijQuestion = questionModePresent;
+    } else if (tenseMode === 'past'){
+      currentRowTense = ['past','past','past','past','past','past'];
+      currentJijQuestion = questionModePast; // has no effect on the actual form, kept for the heading note
+    } else {
+      currentRowTense = buildMixedRowTenses();
+      currentJijQuestion = (currentRowTense[1] === 'present') ? (Math.random() < 0.5) : false;
+    }
+
+    // The jij-vorm in a vragende zin (bijv. "Loop jij?") verliest de -t en wordt gelijk aan de ik-vorm.
+    // In de verleden tijd verandert er niets, dus dat geval heeft hier vanzelf geen effect.
+    currentExpected = currentRowTense.map((t, i) => {
+      if (t === 'past') return currentVerb.formsPast[i];
+      if (i === 1 && currentJijQuestion) return currentVerb.formsPresent[0];
+      return currentVerb.formsPresent[i];
+    });
+
     lockedCount = 0;
     feedback.textContent = '';
     feedback.className = 'feedback';
     verbInfinitive.textContent = currentVerb.infinitief;
+    verbHeading.textContent = tenseMode === 'present'
+      ? ('tegenwoordige tijd' + (questionModePresent ? ' — vragende vorm' : ''))
+      : tenseMode === 'past'
+        ? ('verleden tijd' + (questionModePast ? ' — vragende vorm' : ''))
+        : 'door elkaar — let op nu / toen';
     renderForm();
     updateProgressLine();
   }
@@ -373,8 +481,15 @@
     PRONOUNS.forEach((label, i) => {
       const row = document.createElement('div');
       row.className = 'verb-row';
+      let badges = '';
+      if (tenseMode === 'mixed'){
+        badges += '<span class="tense-badge ' + currentRowTense[i] + '">' + (currentRowTense[i] === 'past' ? 'toen' : 'nu') + '</span>';
+      }
+      if (i === 1 && currentRowTense[i] === 'present' && currentJijQuestion){
+        badges += '<span class="tense-badge question">vragend</span>';
+      }
       row.innerHTML =
-        '<label for="vinput' + i + '">' + label + '</label>' +
+        '<label for="vinput' + i + '">' + label + badges + '</label>' +
         '<input type="text" id="vinput' + i + '" data-index="' + i + '" autocomplete="off" autocapitalize="off" spellcheck="false">' +
         '<span class="verb-check" id="vcheck' + i + '"></span>';
       verbForm.appendChild(row);
@@ -405,7 +520,7 @@
       if (input.disabled){ continue; } // already locked correct
       anyNewlyChecked = true;
       const given = input.value.trim().toLowerCase();
-      const expected = currentVerb.forms[i].toLowerCase();
+      const expected = currentExpected[i].toLowerCase();
       if (given !== ''){
         if (given === expected){
           input.classList.remove('wrong');
@@ -492,7 +607,7 @@
     return html;
   }
 
-  const EXPLAIN_STEPS = [
+  const DT_STEPS = [
     {
       title: 'Het probleem',
       text: 'Moet je nu \u2018word\u2019 of \u2018wordt\u2019 schrijven bij hij/zij/het? En \u2018houd\u2019 of \u2018houdt\u2019? Daar is een handig trucje voor, met het werkwoord \u2018lopen\u2019.',
@@ -549,7 +664,66 @@
     }
   ];
 
+  function simplePairHTML(rows){
+    let html = '<table class="compare-table"><thead><tr><th>werkwoord</th><th>verleden tijd</th></tr></thead><tbody>';
+    rows.forEach(r => {
+      html += '<tr><td class="pron">' + r.verb + '</td><td class="form' + (r.hl ? ' highlight' : '') + '">' + r.past + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  const KOFSCHIP_STEPS = [
+    {
+      title: 'Het probleem',
+      text: 'Schrijf je \u2018maakte\u2019 of \u2018maakde\u2019? \u2018Speelde\u2019 of \u2018speelte\u2019? Bij de verleden tijd van gewone werkwoorden moet je kiezen tussen -de(n) en -te(n). Het woord \u2018\u2019t kofschip\u2019 helpt je die keuze te maken.',
+      extra: ''
+    },
+    {
+      title: 'Het woord \u2019t kofschip',
+      text: 'Kijk naar de laatste letter van de ik-vorm (de stam). Komt die letter voor in \u2019t kofschip \u2014 dus t, k, f, s, ch of p \u2014 dan gebruik je -te of -ten. Komt de laatste letter er niet in voor, dan gebruik je -de of -den.',
+      extra: '<p class="explain-text" style="margin-bottom:14px;"><strong>\u2019t kofschip</strong> \u2192 de letters: t \u2013 k \u2013 f \u2013 s \u2013 ch \u2013 p</p>'
+    },
+    {
+      title: 'Voorbeeld: eindigt op een kofschip-letter',
+      text: 'De stam van \u2018maken\u2019 is \u2018maak\u2019 \u2014 eindigt op een k, en die zit in \u2019t kofschip. Dus wordt het \u2018maakte\u2019, met een t.',
+      extra: simplePairHTML([{verb:'maken (stam: maak)', past:'maakte', hl:true}])
+    },
+    {
+      title: 'Nog een voorbeeld',
+      text: 'De stam van \u2018wachten\u2019 is \u2018wacht\u2019 \u2014 eindigt op een t, en die zit ook in \u2019t kofschip. Dus wordt het \u2018wachtte\u2019 (met dubbele t: de t van de stam plus de t van de verleden tijd).',
+      extra: simplePairHTML([{verb:'wachten (stam: wacht)', past:'wachtte', hl:true}])
+    },
+    {
+      title: 'Voorbeeld: eindigt niet op een kofschip-letter',
+      text: 'De stam van \u2018spelen\u2019 is \u2018speel\u2019 \u2014 eindigt op een l, en die zit niet in \u2019t kofschip. Dus wordt het \u2018speelde\u2019, met een d.',
+      extra: simplePairHTML([{verb:'spelen (stam: speel)', past:'speelde', hl:true}])
+    },
+    {
+      title: 'Nog een voorbeeld',
+      text: 'De stam van \u2018landen\u2019 is \u2018land\u2019 \u2014 eindigt op een d, en die zit niet in \u2019t kofschip. Dus wordt het \u2018landde\u2019 (met dubbele d: de d van de stam plus de d van de verleden tijd).',
+      extra: simplePairHTML([{verb:'landen (stam: land)', past:'landde', hl:true}])
+    },
+    {
+      title: 'En in het meervoud?',
+      text: 'Bij wij / jullie / zij komt er gewoon een -n achteraan: -te wordt -ten, en -de wordt -den. \u2018Hij maakte\u2019 \u2192 \u2018wij maakten\u2019. \u2018Hij speelde\u2019 \u2192 \u2018wij speelden\u2019.',
+      extra: ''
+    },
+    {
+      title: 'Let op: niet elk werkwoord volgt deze regel',
+      text: 'Sommige werkwoorden zijn onregelmatig en volgen deze regel helemaal niet, zoals \u2018lopen\u2019 (niet \u2018loopte\u2019, maar \u2018liep\u2019) of \u2018zitten\u2019 (niet \u2018zitte\u2019, maar \u2018zat\u2019). Het \u2019t kofschip-trucje werkt alleen bij de gewone, regelmatige werkwoorden.',
+      extra: ''
+    },
+    {
+      title: 'Aan de slag!',
+      text: 'Gebruik dit trucje steeds als je twijfelt tussen -de en -te. Ga nu oefenen met de verleden tijd \u2014 sluit deze uitleg en klik op \u2018Beginnen\u2019.',
+      extra: ''
+    }
+  ];
+
+  let currentSteps = DT_STEPS;
   let explainIndex = 0;
+  const explainScreenTitle = document.getElementById('explainScreenTitle');
   const explainTitle = document.getElementById('explainTitle');
   const explainExtra = document.getElementById('explainExtra');
   const explainText = document.getElementById('explainText');
@@ -558,34 +732,43 @@
   const nextStepBtn = document.getElementById('nextStepBtn');
 
   function renderExplainStep(){
-    const step = EXPLAIN_STEPS[explainIndex];
+    const step = currentSteps[explainIndex];
     explainTitle.textContent = step.title;
     explainExtra.innerHTML = step.extra || '';
     explainText.textContent = step.text;
-    explainStepLine.textContent = 'Stap ' + (explainIndex + 1) + ' van ' + EXPLAIN_STEPS.length;
+    explainStepLine.textContent = 'Stap ' + (explainIndex + 1) + ' van ' + currentSteps.length;
     prevStepBtn.disabled = explainIndex === 0;
-    nextStepBtn.textContent = (explainIndex === EXPLAIN_STEPS.length - 1) ? 'Klaar ✔' : 'Volgende ▶';
+    nextStepBtn.textContent = (explainIndex === currentSteps.length - 1) ? 'Klaar ✔' : 'Volgende ▶';
     speak(step.text, null);
+  }
+
+  function openExplanation(steps, title){
+    currentSteps = steps;
+    explainIndex = 0;
+    explainScreenTitle.textContent = title;
+    showScreen(screenExplain);
+    renderExplainStep();
   }
 
   prevStepBtn.addEventListener('click', () => {
     if (explainIndex > 0){ explainIndex--; renderExplainStep(); }
   });
   nextStepBtn.addEventListener('click', () => {
-    if (explainIndex < EXPLAIN_STEPS.length - 1){ explainIndex++; renderExplainStep(); }
+    if (explainIndex < currentSteps.length - 1){ explainIndex++; renderExplainStep(); }
     else { if (window.speechSynthesis) speechSynthesis.cancel(); showScreen(screenSetup); }
   });
   document.getElementById('replayStepBtn').addEventListener('click', () => {
-    speak(EXPLAIN_STEPS[explainIndex].text, null);
+    speak(currentSteps[explainIndex].text, null);
   });
   document.getElementById('explainBackBtn').addEventListener('click', () => {
     if (window.speechSynthesis) speechSynthesis.cancel();
     showScreen(screenSetup);
   });
   document.getElementById('explainLinkBtn').addEventListener('click', () => {
-    explainIndex = 0;
-    showScreen(screenExplain);
-    renderExplainStep();
+    openExplanation(DT_STEPS, "Het -dt-trucje met 'lopen'");
+  });
+  document.getElementById('kofschipLinkBtn').addEventListener('click', () => {
+    openExplanation(KOFSCHIP_STEPS, "'t Kofschip");
   });
 
 })();
